@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Sentinel Lab, un mini tableau de bord pédagogique de cybersécurité réseau." />
+    <title>Sentinel Lab — Cybersecurity monitor</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="#" aria-label="Sentinel Lab accueil">
+          <span class="brand-mark">⌁</span>
+          <span><strong>sentinel</strong><small>LAB / NETWORK</small></span>
+        </a>
+        <nav aria-label="Navigation principale">
+          <a class="nav-link active" href="#overview"><span>◈</span> Vue générale</a>
+          <a class="nav-link" href="#events"><span>⌁</span> Événements</a>
+          <a class="nav-link" href="#assets"><span>▦</span> Actifs réseau</a>
+          <a class="nav-link" href="#playbook"><span>✓</span> Playbook</a>
+        </nav>
+        <div class="sidebar-note">
+          <span class="status-dot"></span>
+          <div><strong>Mode labo</strong><small>Données simulées</small></div>
+        </div>
+        <div class="sidebar-footer">SENTINEL LAB v1.0<br />Projet pédagogique</div>
+      </aside>
+
+      <main class="main-content">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">CENTRE DE CONTRÔLE / <span id="current-date"></span></p>
+            <h1>Vue générale</h1>
+          </div>
+          <div class="topbar-actions">
+            <span class="live-badge"><span class="pulse"></span> Simulation active</span>
+            <button class="icon-button" id="refresh-button" title="Rafraîchir les données" aria-label="Rafraîchir les données">↻</button>
+            <div class="avatar">NL</div>
+          </div>
+        </header>
+
+        <section class="notice">
+          <span class="notice-icon">i</span>
+          <p><strong>Environnement de démonstration.</strong> Les événements et adresses affichés sont fictifs. Aucun scan réel n'est exécuté.</p>
+          <button id="dismiss-notice" aria-label="Fermer l'information">×</button>
+        </section>
+
+        <section class="hero-grid" id="overview">
+          <article class="risk-card card">
+            <div class="card-heading"><span>Risque global</span><span class="trend down">↓ 12% <small>vs semaine dernière</small></span></div>
+            <div class="risk-value"><strong id="risk-score">68</strong><span>/100</span></div>
+            <div class="meter"><span id="risk-meter"></span></div>
+            <div class="risk-labels"><span>Faible</span><span>Modéré</span><span>Élevé</span><span>Critique</span></div>
+            <p class="muted">Dernière évaluation il y a 8 minutes</p>
+          </article>
+          <article class="stat-card card"><div class="stat-icon orange">!</div><span class="stat-label">Alertes ouvertes</span><strong id="alert-count">07</strong><span class="trend up">↑ 2 cette semaine</span></article>
+          <article class="stat-card card"><div class="stat-icon blue">⌁</div><span class="stat-label">Événements analysés</span><strong id="event-count">1 284</strong><span class="trend neutral">sur les dernières 24 h</span></article>
+          <article class="stat-card card"><div class="stat-icon green">✓</div><span class="stat-label">Actifs protégés</span><strong>94<span class="unit">%</span></strong><span class="trend down">↑ 4% ce mois-ci</span></article>
+        </section>
+
+        <section class="content-grid">
+          <article class="card chart-card">
+            <div class="section-heading"><div><span class="kicker">MONITORING</span><h2>Activité réseau</h2></div><select id="chart-range" aria-label="Période du graphique"><option value="24">Dernières 24 heures</option><option value="7">7 derniers jours</option></select></div>
+            <div class="chart-wrap"><div class="y-labels"><span>120</span><span>90</span><span>60</span><span>30</span><span>0</span></div><div class="chart-area"><div class="grid-lines"><i></i><i></i><i></i><i></i><i></i></div><svg id="traffic-chart" viewBox="0 0 720 220" preserveAspectRatio="none" aria-label="Graphique de l'activité réseau"><defs><linearGradient id="fillGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2dd4bf" stop-opacity=".28"/><stop offset="100%" stop-color="#2dd4bf" stop-opacity="0"/></linearGradient></defs><path id="chart-fill" fill="url(#fillGradient)"></path><path id="chart-line" fill="none" stroke="#2dd4bf" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path></svg><div class="x-labels"><span>00h</span><span>04h</span><span>08h</span><span>12h</span><span>16h</span><span>20h</span><span>24h</span></div></div></div>
+            <div class="chart-legend"><span><i class="legend-dot teal"></i>Trafic entrant</span><span><i class="legend-dot purple"></i>Trafic sortant</span><span class="muted">▾ Données simulées</span></div>
+          </article>
+
+          <article class="card alerts-card" id="events">
+            <div class="section-heading"><div><span class="kicker">À TRAITER</span><h2>Alertes récentes</h2></div><button class="text-button" id="view-all">Voir tout <span>→</span></button></div>
+            <div class="alert-list" id="alert-list"></div>
+          </article>
+        </section>
+
+        <section class="bottom-grid">
+          <article class="card assets-card" id="assets">
+            <div class="section-heading"><div><span class="kicker">INVENTAIRE</span><h2>Actifs réseau</h2></div><button class="filter-button" id="filter-assets">Tous les actifs ▾</button></div>
+            <div class="table-wrap"><table><thead><tr><th>ACTIF</th><th>ADRESSE IP</th><th>ÉTAT</th><th>DERNIÈRE ACTIVITÉ</th></tr></thead><tbody id="asset-table"></tbody></table></div>
+          </article>
+          <article class="card playbook-card" id="playbook">
+            <div class="section-heading"><div><span class="kicker">GUIDE D'ACTION</span><h2>Playbook express</h2></div><span class="step-count">2/4</span></div>
+            <p class="muted">Les bons réflexes face à une alerte réseau.</p>
+            <div class="progress"><span></span></div>
+            <ol class="playbook-list"><li class="done"><span>✓</span><div><strong>Identifier</strong><small>Vérifier la source et la cible</small></div></li><li class="current"><span>2</span><div><strong>Isoler</strong><small>Limiter la propagation de la menace</small></div></li><li><span>3</span><div><strong>Analyser</strong><small>Collecter les preuves utiles</small></div></li><li><span>4</span><div><strong>Rétablir</strong><small>Corriger puis documenter</small></div></li></ol>
+          </article>
+        </section>
+        <footer><span>Sentinel Lab © 2026</span><span>Conçu pour apprendre · Ne remplace pas un outil SOC réel</span></footer>
+      </main>
+    </div>
+    <script src="app.js"></script>
+  </body>
+</html>
