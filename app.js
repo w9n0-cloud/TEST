@@ -85,8 +85,8 @@ $("#user-dialog-close").addEventListener("click", () => $("#user-dialog").close(
 $("#user-form").addEventListener("submit", async (event) => { event.preventDefault(); try { await api("/api/admin/users", { method: "POST", body: JSON.stringify(Object.fromEntries(new FormData(event.currentTarget))) }); $("#user-dialog").close(); event.currentTarget.reset(); await renderAdmin(); toast("Compte créé."); } catch (error) { toast(error.message); } });
 function connectStream() {
   const stream = new EventSource("/api/stream");
-  stream.addEventListener("dashboard", (event) => { state = JSON.parse(event.data); render(); renderAdmin(); });
+  stream.addEventListener("dashboard", (event) => { state = JSON.parse(event.data); render(); renderAdmin(); $("#stream-status").textContent = "Flux temps réel"; });
   stream.addEventListener("alert", (event) => { const alert = JSON.parse(event.data); toast(`Nouvelle alerte temps réel : ${alert.id}`); });
-  stream.onerror = () => { stream.close(); setTimeout(connectStream, 3000); };
+  stream.onerror = () => { $("#stream-status").textContent = "Reconnexion..."; stream.close(); setTimeout(connectStream, 3000); };
 }
 api("/api/auth/me").then(async (result) => { currentUser = result.user; if (currentUser) { $("#login-screen").classList.add("hidden"); await loadDashboard(); connectStream(); } }).catch((error) => { toast(`Backend indisponible : ${error.message}`); console.error(error); });

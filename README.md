@@ -66,10 +66,10 @@ $env:SENTINEL_ADMIN_PASSWORD = "un-mot-de-passe-long-et-unique"
 npm start
 ```
 
-Pour surveiller uniquement les alertes réellement ingérées par ton application, désactive le générateur de démonstration :
+Le mode réel est activé par défaut : aucune fausse alerte n'est générée. Pour activer ponctuellement le générateur de démonstration :
 
 ```powershell
-$env:SENTINEL_SIMULATION = "false"
+$env:SENTINEL_SIMULATION = "true"
 npm start
 ```
 

@@ -7,7 +7,7 @@ import Database from "better-sqlite3";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
 const port = Number(process.env.PORT || 3000);
-const simulationEnabled = process.env.SENTINEL_SIMULATION !== "false";
+const simulationEnabled = process.env.SENTINEL_SIMULATION === "true";
 const db = new Database(join(root, "sentinel.db"));
 db.pragma("journal_mode = WAL");
 db.pragma("foreign_keys = ON");
@@ -184,5 +184,5 @@ const server = http.createServer(async (request, response) => {
     return serveStatic(request, response);
   } catch (error) { console.error(error); return json(response, 500, { error: "Erreur interne du serveur" }); }
 });
-if (simulationEnabled) setInterval(() => { if (Math.random() > 0.45) insertSimulation(); else broadcast("heartbeat", { generatedAt: now(), summary: summary() }); }, 7000);
+if (simulationEnabled) setInterval(() => { if (Math.random() > 0.72 && db.prepare("SELECT COUNT(*) AS count FROM alerts WHERE status = 'open'").get().count < 30) insertSimulation(); else broadcast("heartbeat", { generatedAt: now(), summary: summary() }); }, 15000);
 server.listen(port, () => console.log(`Sentinel Lab disponible sur http://localhost:${port}`));
