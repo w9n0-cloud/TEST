@@ -100,10 +100,20 @@
             <div class="intel-footer"><span class="status-dot"></span> Dernière synchronisation : il y a 2 min</div>
           </article>
         </section>
+        <section class="admin-grid" id="admin-panel">
+          <article class="card admin-card">
+            <div class="section-heading"><div><span class="kicker">ADMINISTRATION</span><h2>Utilisateurs et accès</h2></div><span class="role-badge" id="current-role">ADMIN</span></div>
+            <div class="admin-actions"><button class="primary-button" id="create-user">＋ Créer un utilisateur</button><button class="secondary-button" id="logout-button">Se déconnecter</button></div>
+            <div class="table-wrap"><table><thead><tr><th>UTILISATEUR</th><th>RÔLE</th><th>ÉTAT</th><th>DERNIÈRE CONNEXION</th></tr></thead><tbody id="user-table"></tbody></table></div>
+          </article>
+          <article class="card admin-card"><div class="section-heading"><div><span class="kicker">AUDIT</span><h2>Journal de sécurité</h2></div></div><div class="audit-list" id="audit-list"></div></article>
+        </section>
         <footer><span>Sentinel Lab © 2026</span><span>Conçu pour apprendre · Ne remplace pas un outil SOC réel</span></footer>
       </main>
     </div>
     <div class="toast-region" id="toast-region" aria-live="polite"></div>
+    <div class="login-screen" id="login-screen"><form class="login-card" id="login-form"><div class="login-brand"><span class="brand-mark">⌁</span><strong>sentinel<span>LAB</span></strong></div><span class="kicker">CENTRE SOC / ACCÈS SÉCURISÉ</span><h1>Bienvenue dans Sentinel</h1><p class="muted">Connecte-toi pour accéder à ta console de supervision.</p><label>Email<input name="email" type="email" value="admin@sentinel.local" required /></label><label>Mot de passe<input name="password" type="password" placeholder="Mot de passe admin" required /></label><button class="primary-button" type="submit">Ouvrir la console</button><p class="login-error" id="login-error"></p><small>Premier démarrage : définis SENTINEL_ADMIN_PASSWORD avant production.</small></form></div>
+    <dialog id="user-dialog" class="alert-dialog"><button class="dialog-close" id="user-dialog-close" aria-label="Fermer">×</button><span class="kicker">NOUVEL ACCÈS</span><h2>Créer un utilisateur</h2><form id="user-form" class="user-form"><label>Nom<input name="name" required /></label><label>Email<input name="email" type="email" required /></label><label>Rôle<select name="role"><option value="viewer">Viewer</option><option value="analyst">Analyste</option><option value="admin">Administrateur</option></select></label><label>Mot de passe<input name="password" type="password" minlength="10" required /></label><button class="primary-button" type="submit">Créer le compte</button></form></dialog>
     <dialog id="alert-dialog" class="alert-dialog"><button class="dialog-close" id="dialog-close" aria-label="Fermer">×</button><span class="kicker">FICHE INCIDENT</span><h2 id="dialog-title">Alerte</h2><p id="dialog-source" class="muted"></p><div class="dialog-grid"><div><span>PRIORITÉ</span><strong id="dialog-level"></strong></div><div><span>STATUT</span><strong>À investiguer</strong></div><div><span>RÉFÉRENCE</span><strong id="dialog-id"></strong></div></div><div class="dialog-actions"><button class="primary-button" id="ack-button">Prendre en charge</button><button class="secondary-button" id="dialog-export">Exporter l'incident</button></div></dialog>
     <script src="app.js"></script>
   </body>

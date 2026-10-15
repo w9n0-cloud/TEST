@@ -1,4 +1,5 @@
 let state = { alerts: [], assets: [], traffic: [], events: [], summary: {} };
+let currentUser = null;
 const $ = (selector) => document.querySelector(selector);
 const esc = (value) => String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[char]));
 const relativeTime = (date) => {
@@ -34,13 +35,20 @@ function renderChart() {
 function renderTimeline() {
   $("#timeline").innerHTML = state.events.slice(0, 3).map((event) => `<div class="timeline-item"><strong>${esc(event.kind === "alert" ? "Alerte corrélée" : event.kind)}</strong><small>${relativeTime(event.createdAt)} · ${esc(event.message)}</small></div>`).join("");
 }
+async function renderAdmin() {
+  if (!currentUser || currentUser.role !== "admin") { $("#admin-panel").hidden = true; return; }
+  $("#admin-panel").hidden = false; $("#current-role").textContent = currentUser.role.toUpperCase();
+  const [users, audit] = await Promise.all([api("/api/admin/users"), api("/api/admin/audit")]);
+  $("#user-table").innerHTML = users.map((user) => `<tr><td><strong>${esc(user.name)}</strong><br><small class="muted">${esc(user.email)}</small></td><td>${esc(user.role)}</td><td><span class="status online">${user.active ? "Actif" : "Désactivé"}</span></td><td class="last-seen">${user.lastLogin ? relativeTime(user.lastLogin) : "Jamais"}</td></tr>`).join("");
+  $("#audit-list").innerHTML = audit.slice(0, 8).map((row) => `<div class="audit-row"><strong>${esc(row.action)}</strong><small>${esc(row.email || "système")} · ${relativeTime(row.created_at)}</small></div>`).join("");
+}
 function render() { renderSummary(); renderAlerts(); renderAssets(); renderChart(); renderTimeline(); }
 async function api(path, options = {}) {
   const response = await fetch(path, { headers: { "Content-Type": "application/json" }, ...options });
   if (!response.ok) throw new Error((await response.json()).error || "Erreur API");
   return response.json();
 }
-async function loadDashboard() { state = await api("/api/dashboard"); render(); }
+async function loadDashboard() { state = await api("/api/dashboard"); render(); await renderAdmin(); }
 function openAlert(id) {
   const alert = state.alerts.find((item) => item.id === id); if (!alert) return;
   $("#dialog-title").textContent = alert.title; $("#dialog-source").textContent = `${alert.source} · ${alert.detail}`;
@@ -70,8 +78,15 @@ $("#rotate-intel").addEventListener("click", () => toast("Signaux threat intel s
 $("#dialog-close").addEventListener("click", () => $("#alert-dialog").close());
 $("#ack-button").addEventListener("click", async () => { await api("/api/alerts/ack", { method: "POST", body: JSON.stringify({ id: $("#alert-dialog").dataset.id }) }); $("#alert-dialog").close(); await loadDashboard(); toast("Incident pris en charge et écrit dans SQLite."); });
 $("#dialog-export").addEventListener("click", () => { const alert = state.alerts.find((item) => item.id === $("#alert-dialog").dataset.id); if (alert) download(`${alert.id}.json`, JSON.stringify(alert, null, 2), "application/json"); });
-const stream = new EventSource("/api/stream");
-stream.addEventListener("dashboard", (event) => { state = JSON.parse(event.data); render(); });
-stream.addEventListener("alert", (event) => { const alert = JSON.parse(event.data); toast(`Nouvelle alerte temps réel : ${alert.id}`); });
-stream.onerror = () => toast("Flux temps réel interrompu, reconnexion automatique...");
-loadDashboard().catch((error) => { toast(`Backend indisponible : ${error.message}`); console.error(error); });
+$("#login-form").addEventListener("submit", async (event) => { event.preventDefault(); const data = Object.fromEntries(new FormData(event.currentTarget)); try { const result = await api("/api/auth/login", { method: "POST", body: JSON.stringify(data) }); currentUser = result.user; $("#login-screen").classList.add("hidden"); toast(`Session ouverte : ${currentUser.name}`); await loadDashboard(); } catch (error) { $("#login-error").textContent = error.message; } });
+$("#logout-button").addEventListener("click", async () => { await api("/api/auth/logout", { method: "POST" }); location.reload(); });
+$("#create-user").addEventListener("click", () => $("#user-dialog").showModal());
+$("#user-dialog-close").addEventListener("click", () => $("#user-dialog").close());
+$("#user-form").addEventListener("submit", async (event) => { event.preventDefault(); try { await api("/api/admin/users", { method: "POST", body: JSON.stringify(Object.fromEntries(new FormData(event.currentTarget))) }); $("#user-dialog").close(); event.currentTarget.reset(); await renderAdmin(); toast("Compte créé."); } catch (error) { toast(error.message); } });
+function connectStream() {
+  const stream = new EventSource("/api/stream");
+  stream.addEventListener("dashboard", (event) => { state = JSON.parse(event.data); render(); renderAdmin(); });
+  stream.addEventListener("alert", (event) => { const alert = JSON.parse(event.data); toast(`Nouvelle alerte temps réel : ${alert.id}`); });
+  stream.onerror = () => { stream.close(); setTimeout(connectStream, 3000); };
+}
+api("/api/auth/me").then(async (result) => { currentUser = result.user; if (currentUser) { $("#login-screen").classList.add("hidden"); await loadDashboard(); connectStream(); } }).catch((error) => { toast(`Backend indisponible : ${error.message}`); console.error(error); });

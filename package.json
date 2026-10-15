@@ -1,8 +1,8 @@
 {
   "name": "sentinel-lab",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "private": true,
-  "description": "Simulation SOC pédagogique avec API, SQLite et flux temps réel.",
+  "description": "Sentinel Lab SOC local avec comptes, admin, SQLite, ingestion de logs et temps réel.",
   "type": "module",
   "scripts": {
     "start": "node server.js",
