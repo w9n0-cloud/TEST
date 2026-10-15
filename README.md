@@ -13,7 +13,48 @@ npm install
 npm start
 ```
 
-Puis ouvrir http://localhost:3000. Ne pas ouvrir `index.html` directement : l'interface utilise l'API et le flux SSE du serveur.
+Puis ouvrir http://localhost:3000. Ne pas ouvrir `index.html` directement en local : l'interface utilise l'API et le flux SSE du serveur.
+
+## Architecture frontend / backend
+
+Le projet peut fonctionner de deux façons :
+
+| Mode | Frontend | Backend | Usage |
+| --- | --- | --- | --- |
+| Local | servi par Node | `localhost:3000` | développement et test |
+| Production | GitHub Pages | Render/Railway/VPS | site public + API séparée |
+
+Le frontend lit l'URL de l'API dans [frontend-config.js](./frontend-config.js). En local, la valeur vide utilise la même origine. Pour GitHub Pages, remplacez-la par l'URL HTTPS du backend déployé :
+
+```js
+window.SENTINEL_API_URL = "https://sentinel-lab-api.onrender.com";
+```
+
+Ne mettez jamais le mot de passe admin ou une clé secrète dans le frontend.
+
+## Déployer le backend
+
+### Render (le plus simple)
+
+1. Créer un **Web Service** depuis le dépôt GitHub.
+2. Build command : `npm ci`.
+3. Start command : `npm start`.
+4. Ajouter `SENTINEL_ADMIN_PASSWORD` avec un secret long et unique.
+5. Ajouter `FRONTEND_ORIGIN=https://w9n0-cloud.github.io`.
+6. Ajouter le disque persistant `/opt/render/project/src/data` si SQLite doit survivre aux redémarrages.
+7. Vérifier `https://TON-BACKEND/api/health`.
+8. Modifier `frontend-config.js` avec l'URL du backend, commit puis push.
+
+Le fichier [render.yaml](./render.yaml) automatise la configuration de base. Pour un backend public, utilise HTTPS et garde `FRONTEND_ORIGIN` limité à l'origine GitHub Pages exacte.
+
+### Docker / VPS
+
+```bash
+docker build -t sentinel-lab-api .
+docker run --env-file .env -p 3000:3000 -v sentinel-data:/app/data sentinel-lab-api
+```
+
+En production, définissez `DB_PATH=/app/data/sentinel.db`.
 
 ## Technologies
 
@@ -56,7 +97,7 @@ Au premier démarrage, le serveur crée :
 
 ```text
 Email : admin@sentinel.local
-Mot de passe : ChangeMe!123
+Mot de passe : la valeur de `SENTINEL_ADMIN_PASSWORD` (ou `ChangeMe!123` en local uniquement)
 ```
 
 Pour remplacer ce mot de passe avant le démarrage :

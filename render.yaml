@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: sentinel-lab-api
+    runtime: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: SENTINEL_ADMIN_PASSWORD
+        generateValue: true
+      - key: SENTINEL_SIMULATION
+        value: "false"
+      - key: FRONTEND_ORIGIN
+        sync: false
+      - key: DB_PATH
+        value: /opt/render/project/src/data/sentinel.db
+    disk:
+      name: sentinel-data
+      mountPath: /opt/render/project/src/data
+      sizeGB: 1

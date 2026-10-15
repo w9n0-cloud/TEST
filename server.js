@@ -8,7 +8,9 @@ import Database from "better-sqlite3";
 const root = fileURLToPath(new URL(".", import.meta.url));
 const port = Number(process.env.PORT || 3000);
 const simulationEnabled = process.env.SENTINEL_SIMULATION === "true";
-const db = new Database(join(root, "sentinel.db"));
+const db = new Database(process.env.DB_PATH || join(root, "sentinel.db"));
+const allowedOrigins = new Set((process.env.FRONTEND_ORIGIN || `http://localhost:${port}`).split(",").map((origin) => origin.trim()).filter(Boolean));
+const crossOrigin = [...allowedOrigins].some((origin) => !origin.includes("localhost"));
 db.pragma("journal_mode = WAL");
 db.pragma("foreign_keys = ON");
 db.exec(await readFile(join(root, "schema.sql"), "utf8"));
@@ -29,6 +31,16 @@ function audit(user, action, request, metadata = {}) {
 }
 function unauthorized(response) { return json(response, 401, { error: "Authentification requise" }); }
 function forbidden(response) { return json(response, 403, { error: "Droits administrateur requis" }); }
+function applyCors(request, response) {
+  const origin = request.headers.origin;
+  if (origin && allowedOrigins.has(origin)) {
+    response.setHeader("Access-Control-Allow-Origin", origin);
+    response.setHeader("Access-Control-Allow-Credentials", "true");
+    response.setHeader("Vary", "Origin");
+  }
+  response.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  response.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+}
 
 const seedAssets = [
   ["srv-web-01", "192.0.2.10", "server", "online", 32],
@@ -146,16 +158,19 @@ async function serveStatic(request, response) {
 }
 const server = http.createServer(async (request, response) => {
   try {
+    applyCors(request, response);
     const url = new URL(request.url, `http://${request.headers.host}`);
+    if (request.method === "OPTIONS") { response.writeHead(204); return response.end(); }
+    if (url.pathname === "/api/health" && request.method === "GET") return json(response, 200, { ok: true, service: "sentinel-lab-api", generatedAt: now() });
     if (url.pathname === "/api/auth/me" && request.method === "GET") return json(response, 200, { user: userFor(request) });
     if (url.pathname === "/api/auth/login" && request.method === "POST") {
       const payload = await body(request); const user = db.prepare("SELECT * FROM users WHERE email = ? AND active = 1").get(payload.email);
       if (!user || typeof payload.password !== "string" || !verifyPassword(payload.password, user.password_hash)) return json(response, 401, { error: "Identifiants invalides" });
       const token = crypto.randomBytes(32).toString("hex"); const expiresAt = new Date(Date.now() + 8 * 3600000).toISOString();
       sessions.set(token, { userId: user.id, expiresAt }); db.prepare("UPDATE users SET last_login = ? WHERE id = ?").run(now(), user.id); audit(user, "login", request);
-      response.writeHead(200, { "Content-Type": "application/json", "Set-Cookie": `${cookieName}=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=28800` }); return response.end(JSON.stringify({ user: { id: user.id, email: user.email, role: user.role, name: user.name } }));
+      response.writeHead(200, { "Content-Type": "application/json", "Set-Cookie": `${cookieName}=${token}; HttpOnly; SameSite=${crossOrigin ? "None" : "Lax"}; ${crossOrigin ? "Secure; " : ""}Path=/; Max-Age=28800` }); return response.end(JSON.stringify({ user: { id: user.id, email: user.email, role: user.role, name: user.name } }));
     }
-    if (url.pathname === "/api/auth/logout" && request.method === "POST") { const token = parseCookies(request.headers.cookie)[cookieName]; sessions.delete(token); response.writeHead(200, { "Content-Type": "application/json", "Set-Cookie": `${cookieName}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0` }); return response.end(JSON.stringify({ ok: true })); }
+    if (url.pathname === "/api/auth/logout" && request.method === "POST") { const token = parseCookies(request.headers.cookie)[cookieName]; sessions.delete(token); response.writeHead(200, { "Content-Type": "application/json", "Set-Cookie": `${cookieName}=; HttpOnly; SameSite=${crossOrigin ? "None" : "Lax"}; ${crossOrigin ? "Secure; " : ""}Path=/; Max-Age=0` }); return response.end(JSON.stringify({ ok: true })); }
     const user = userFor(request);
     if (!user && url.pathname.startsWith("/api/")) return unauthorized(response);
     if (url.pathname === "/api/admin/users" && request.method === "GET") { if (user.role !== "admin") return forbidden(response); return json(response, 200, db.prepare("SELECT id, email, name, role, active, created_at AS createdAt, last_login AS lastLogin FROM users ORDER BY id").all()); }

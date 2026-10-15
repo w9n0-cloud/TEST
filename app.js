@@ -1,5 +1,6 @@
 let state = { alerts: [], assets: [], traffic: [], events: [], summary: {} };
 let currentUser = null;
+const API_BASE = String(window.SENTINEL_API_URL || "").replace(/\/$/, "");
 const $ = (selector) => document.querySelector(selector);
 const esc = (value) => String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[char]));
 const relativeTime = (date) => {
@@ -44,8 +45,12 @@ async function renderAdmin() {
 }
 function render() { renderSummary(); renderAlerts(); renderAssets(); renderChart(); renderTimeline(); }
 async function api(path, options = {}) {
-  const response = await fetch(path, { headers: { "Content-Type": "application/json" }, ...options });
-  if (!response.ok) throw new Error((await response.json()).error || "Erreur API");
+  const response = await fetch(`${API_BASE}${path}`, { credentials: "include", headers: { "Content-Type": "application/json", ...options.headers }, ...options });
+  if (!response.ok) {
+    let message = "Erreur API";
+    try { message = (await response.json()).error || message; } catch { /* réponse non JSON */ }
+    throw new Error(message);
+  }
   return response.json();
 }
 async function loadDashboard() { state = await api("/api/dashboard"); render(); await renderAdmin(); }
@@ -84,7 +89,7 @@ $("#create-user").addEventListener("click", () => $("#user-dialog").showModal())
 $("#user-dialog-close").addEventListener("click", () => $("#user-dialog").close());
 $("#user-form").addEventListener("submit", async (event) => { event.preventDefault(); try { await api("/api/admin/users", { method: "POST", body: JSON.stringify(Object.fromEntries(new FormData(event.currentTarget))) }); $("#user-dialog").close(); event.currentTarget.reset(); await renderAdmin(); toast("Compte créé."); } catch (error) { toast(error.message); } });
 function connectStream() {
-  const stream = new EventSource("/api/stream");
+  const stream = new EventSource(`${API_BASE}/api/stream`, { withCredentials: true });
   stream.addEventListener("dashboard", (event) => { state = JSON.parse(event.data); render(); renderAdmin(); $("#stream-status").textContent = "Flux temps réel"; });
   stream.addEventListener("alert", (event) => { const alert = JSON.parse(event.data); toast(`Nouvelle alerte temps réel : ${alert.id}`); });
   stream.onerror = () => { $("#stream-status").textContent = "Reconnexion..."; stream.close(); setTimeout(connectStream, 3000); };
