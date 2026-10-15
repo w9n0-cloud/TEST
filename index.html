@@ -16,15 +16,16 @@
         </a>
         <nav aria-label="Navigation principale">
           <a class="nav-link active" href="#overview"><span>◈</span> Vue générale</a>
-          <a class="nav-link" href="#events"><span>⌁</span> Événements</a>
+          <a class="nav-link" href="#events"><span>⌁</span> Événements <b class="nav-count" id="nav-alert-count">4</b></a>
           <a class="nav-link" href="#assets"><span>▦</span> Actifs réseau</a>
           <a class="nav-link" href="#playbook"><span>✓</span> Playbook</a>
+          <a class="nav-link" href="#intel"><span>◉</span> Threat intel</a>
         </nav>
         <div class="sidebar-note">
           <span class="status-dot"></span>
           <div><strong>Mode labo</strong><small>Données simulées</small></div>
         </div>
-        <div class="sidebar-footer">SENTINEL LAB v1.0<br />Projet pédagogique</div>
+        <div class="sidebar-footer">SENTINEL LAB v2.0<br />SOC SIMULATOR · FR</div>
       </aside>
 
       <main class="main-content">
@@ -34,6 +35,8 @@
             <h1>Vue générale</h1>
           </div>
           <div class="topbar-actions">
+            <label class="search-box"><span>⌕</span><input id="global-search" type="search" placeholder="Rechercher..." aria-label="Rechercher" /><kbd>Ctrl K</kbd></label>
+            <button class="theme-button" id="theme-button" title="Changer de thème" aria-label="Changer de thème">☼</button>
             <span class="live-badge"><span class="pulse"></span> Simulation active</span>
             <button class="icon-button" id="refresh-button" title="Rafraîchir les données" aria-label="Rafraîchir les données">↻</button>
             <div class="avatar">NL</div>
@@ -54,7 +57,7 @@
             <div class="risk-labels"><span>Faible</span><span>Modéré</span><span>Élevé</span><span>Critique</span></div>
             <p class="muted">Dernière évaluation il y a 8 minutes</p>
           </article>
-          <article class="stat-card card"><div class="stat-icon orange">!</div><span class="stat-label">Alertes ouvertes</span><strong id="alert-count">07</strong><span class="trend up">↑ 2 cette semaine</span></article>
+          <article class="stat-card card"><div class="stat-icon orange">!</div><span class="stat-label">Alertes ouvertes</span><strong id="alert-count">04</strong><span class="trend up">↑ 2 cette semaine</span></article>
           <article class="stat-card card"><div class="stat-icon blue">⌁</div><span class="stat-label">Événements analysés</span><strong id="event-count">1 284</strong><span class="trend neutral">sur les dernières 24 h</span></article>
           <article class="stat-card card"><div class="stat-icon green">✓</div><span class="stat-label">Actifs protégés</span><strong>94<span class="unit">%</span></strong><span class="trend down">↑ 4% ce mois-ci</span></article>
         </section>
@@ -68,6 +71,7 @@
 
           <article class="card alerts-card" id="events">
             <div class="section-heading"><div><span class="kicker">À TRAITER</span><h2>Alertes récentes</h2></div><button class="text-button" id="view-all">Voir tout <span>→</span></button></div>
+            <div class="alert-toolbar"><input id="alert-search" type="search" placeholder="Filtrer les alertes..." aria-label="Filtrer les alertes" /><select id="severity-filter" aria-label="Filtrer par sévérité"><option value="all">Toutes sévérités</option><option value="high">Haute</option><option value="medium">Moyenne</option></select></div>
             <div class="alert-list" id="alert-list"></div>
           </article>
         </section>
@@ -84,9 +88,23 @@
             <ol class="playbook-list"><li class="done"><span>✓</span><div><strong>Identifier</strong><small>Vérifier la source et la cible</small></div></li><li class="current"><span>2</span><div><strong>Isoler</strong><small>Limiter la propagation de la menace</small></div></li><li><span>3</span><div><strong>Analyser</strong><small>Collecter les preuves utiles</small></div></li><li><span>4</span><div><strong>Rétablir</strong><small>Corriger puis documenter</small></div></li></ol>
           </article>
         </section>
+        <section class="operations-grid" id="intel">
+          <article class="card incident-card">
+            <div class="section-heading"><div><span class="kicker">RÉPONSE À INCIDENT</span><h2>Centre d'opérations</h2></div><span class="live-badge compact"><span class="pulse"></span> Live</span></div>
+            <div class="incident-controls"><button class="primary-button" id="simulate-button">＋ Simuler une alerte</button><button class="secondary-button" id="export-json">Exporter JSON</button><button class="secondary-button" id="export-csv">Exporter CSV</button></div>
+            <div class="timeline" id="timeline"></div>
+          </article>
+          <article class="card intel-card">
+            <div class="section-heading"><div><span class="kicker">THREAT INTELLIGENCE</span><h2>Signaux surveillés</h2></div><button class="text-button" id="rotate-intel">Actualiser</button></div>
+            <div class="intel-list"><div><span class="intel-icon red">!</span><span><strong>Credential stuffing</strong><small>14 IP · confiance 92%</small></span><em>ÉLEVÉ</em></div><div><span class="intel-icon yellow">◒</span><span><strong>DNS tunneling</strong><small>3 domaines · confiance 71%</small></span><em class="yellow-text">MOYEN</em></div><div><span class="intel-icon blue">⌁</span><span><strong>Botnet watchlist</strong><small>0 correspondance locale</small></span><em class="green-text">OK</em></div></div>
+            <div class="intel-footer"><span class="status-dot"></span> Dernière synchronisation : il y a 2 min</div>
+          </article>
+        </section>
         <footer><span>Sentinel Lab © 2026</span><span>Conçu pour apprendre · Ne remplace pas un outil SOC réel</span></footer>
       </main>
     </div>
+    <div class="toast-region" id="toast-region" aria-live="polite"></div>
+    <dialog id="alert-dialog" class="alert-dialog"><button class="dialog-close" id="dialog-close" aria-label="Fermer">×</button><span class="kicker">FICHE INCIDENT</span><h2 id="dialog-title">Alerte</h2><p id="dialog-source" class="muted"></p><div class="dialog-grid"><div><span>PRIORITÉ</span><strong id="dialog-level"></strong></div><div><span>STATUT</span><strong>À investiguer</strong></div><div><span>RÉFÉRENCE</span><strong id="dialog-id"></strong></div></div><div class="dialog-actions"><button class="primary-button" id="ack-button">Prendre en charge</button><button class="secondary-button" id="dialog-export">Exporter l'incident</button></div></dialog>
     <script src="app.js"></script>
   </body>
 </html>
